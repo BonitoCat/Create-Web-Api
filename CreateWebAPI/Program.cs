@@ -26,6 +26,8 @@ class Program
                     return ValidationResult.Success();
                 }));
 
+        targetDirectory = PathHelper.ResolvePath(targetDirectory);
+
         string projectName = AnsiConsole.Prompt(
             new TextPrompt<string>("Enter project/solution name:")
                 .DefaultValue("MyWebApi")
@@ -36,7 +38,7 @@ class Program
                         return ValidationResult.Error("Project name cannot be empty.");
                     }
                     
-                    if (name.Any((char c) => !char.IsLetterOrDigit(c) && c != '_'))
+                    if (name.Any(c => !char.IsLetterOrDigit(c) && c != '_'))
                     {
                         return ValidationResult.Error("Project name must contain only letters, numbers, or underscores.");
                     }
@@ -85,20 +87,23 @@ class Program
         {
             existingDbPath = AnsiConsole.Prompt(
                 new TextPrompt<string>("Enter path to database file:")
-                    .Validate((string path) =>
+                    .Validate(path =>
                     {
                         if (string.IsNullOrWhiteSpace(path))
                         {
                             return ValidationResult.Error("Path cannot be empty.");
                         }
-                        
-                        if (!File.Exists(path))
+
+                        string resolved = PathHelper.ResolvePath(path);
+                        if (!File.Exists(resolved))
                         {
-                            return ValidationResult.Error($"File not found: {path}");
+                            return ValidationResult.Error($"File not found: {resolved}");
                         }
-                        
+
                         return ValidationResult.Success();
                     }));
+
+            existingDbPath = PathHelper.ResolvePath(existingDbPath);
 
             tableName = AnsiConsole.Prompt(
                 new TextPrompt<string>("Enter primary table name to query (or press Enter for default):")

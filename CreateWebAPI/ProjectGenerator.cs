@@ -6,7 +6,7 @@ public static class ProjectGenerator
 {
     public static void Generate(ProjectOptions options)
     {
-        string fullTargetPath = Path.GetFullPath(options.TargetDirectory);
+        string fullTargetPath = PathHelper.ResolvePath(options.TargetDirectory);
         string solutionDir = Path.Combine(fullTargetPath, options.ProjectName);
         if (!Directory.Exists(solutionDir))
         {
@@ -112,7 +112,7 @@ public static class ProjectGenerator
 
     private static void ScaffoldExistingDb(string dbPath, ProjectOptions options)
     {
-        string dbFile = Path.GetFullPath(options.ExistingDbPath);
+        string dbFile = PathHelper.ResolvePath(options.ExistingDbPath);
         string dbName = Path.GetFileNameWithoutExtension(dbFile);
         bool isSqlServer = dbFile.EndsWith(".mdf", StringComparison.OrdinalIgnoreCase);
 
@@ -169,9 +169,11 @@ public class AppDbContext : DbContext
         Directory.CreateDirectory(Path.Combine(apiPath, "Services"));
         Directory.CreateDirectory(Path.Combine(apiPath, "Controllers"));
 
+        string resolvedExistingDb = PathHelper.ResolvePath(options.ExistingDbPath);
+
         string appsettingsJson = options.Database switch
         {
-            DatabaseChoice.ConnectExisting when options.ExistingDbPath.EndsWith(".mdf", StringComparison.OrdinalIgnoreCase) =>
+            DatabaseChoice.ConnectExisting when resolvedExistingDb.EndsWith(".mdf", StringComparison.OrdinalIgnoreCase) =>
 $@"{{
   ""Logging"": {{
     ""LogLevel"": {{
@@ -181,7 +183,7 @@ $@"{{
   }},
   ""AllowedHosts"": ""*"",
   ""ConnectionStrings"": {{
-    ""DefaultConnection"": ""Server=(LocalDB)\\mssqllocaldb;attachdbfilename={Path.GetFullPath(options.ExistingDbPath).Replace("\\", "\\\\")};integrated security=True""
+    ""DefaultConnection"": ""Server=(LocalDB)\\mssqllocaldb;attachdbfilename={resolvedExistingDb.Replace("\\", "\\\\")};integrated security=True""
   }}
 }}",
             DatabaseChoice.ConnectExisting =>
@@ -194,7 +196,7 @@ $@"{{
   }},
   ""AllowedHosts"": ""*"",
   ""ConnectionStrings"": {{
-    ""DefaultConnection"": ""Data Source={Path.GetFullPath(options.ExistingDbPath).Replace("\\", "\\\\")}""
+    ""DefaultConnection"": ""Data Source={resolvedExistingDb.Replace("\\", "\\\\")}""
   }}
 }}",
             DatabaseChoice.CreateNewSqlite =>
